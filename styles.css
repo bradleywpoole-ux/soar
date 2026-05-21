@@ -1,0 +1,359 @@
+/* ---------- Reset & base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
+  background: #0b1024;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+
+/* ---------- Scene ---------- */
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  /* Sky gradient transitions smoothly when weather changes */
+  background: linear-gradient(180deg, #a3c9ff 0%, #ffd1dc 100%);
+  transition: background 1.5s ease;
+}
+
+.weather-sunny  { background: linear-gradient(180deg, #a3c9ff 0%, #ffd1dc 100%); }
+.weather-cloudy { background: linear-gradient(180deg, #c8cbd4 0%, #d6c9e6 100%); }
+.weather-rainy  { background: linear-gradient(180deg, #2d3a6b 0%, #4a3b7a 100%); }
+
+/* ---------- Ground ---------- */
+#ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 96px;
+  background-image: url('assets/ground.png');
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: bottom left;
+  z-index: 2;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- Weather layers ---------- */
+.weather-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  z-index: 1;
+}
+.weather-sunny  #sun-rays { opacity: 1; }
+.weather-cloudy #clouds   { opacity: 1; }
+.weather-rainy  #rain     { opacity: 1; }
+
+/* Sun rays — soft radial glow from top with a slow gentle pulse */
+#sun-rays {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(255, 245, 200, 0.75) 0%, rgba(255, 245, 200, 0.0) 55%),
+    conic-gradient(from 200deg at 50% -5%,
+      rgba(255, 240, 200, 0.0) 0deg,
+      rgba(255, 240, 200, 0.25) 20deg,
+      rgba(255, 240, 200, 0.0) 40deg,
+      rgba(255, 240, 200, 0.25) 60deg,
+      rgba(255, 240, 200, 0.0) 80deg,
+      rgba(255, 240, 200, 0.25) 100deg,
+      rgba(255, 240, 200, 0.0) 120deg);
+  animation: sunPulse 6s ease-in-out infinite;
+}
+@keyframes sunPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.78; }
+}
+
+/* Clouds — soft white blobs drifting slowly */
+.cloud {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  filter: blur(6px);
+  box-shadow:
+    60px 10px 0 -5px rgba(255, 255, 255, 0.85),
+    -60px 10px 0 -10px rgba(255, 255, 255, 0.85),
+    30px -10px 0 -8px rgba(255, 255, 255, 0.85),
+    -30px -5px 0 -8px rgba(255, 255, 255, 0.85);
+}
+.cloud-1 { width: 140px; height: 60px; top: 12%; left: -200px; animation: cloudDrift 60s linear infinite; }
+.cloud-2 { width: 100px; height: 45px; top: 24%; left: -200px; animation: cloudDrift 80s linear infinite; animation-delay: -20s; opacity: 0.85; }
+.cloud-3 { width: 160px; height: 70px; top: 36%; left: -200px; animation: cloudDrift 70s linear infinite; animation-delay: -45s; opacity: 0.9; }
+.cloud-4 { width: 120px; height: 55px; top: 8%;  left: -200px; animation: cloudDrift 90s linear infinite; animation-delay: -60s; opacity: 0.8; }
+@keyframes cloudDrift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(100vw + 400px)); }
+}
+
+/* Rain — animated falling drops */
+#rain {
+  background-image:
+    linear-gradient(180deg, transparent 60%, rgba(180, 200, 255, 0.55) 60%, rgba(180, 200, 255, 0.55) 70%, transparent 70%),
+    linear-gradient(180deg, transparent 50%, rgba(200, 215, 255, 0.45) 50%, rgba(200, 215, 255, 0.45) 60%, transparent 60%);
+  background-size: 3px 60px, 2px 50px;
+  background-position: 0 0, 20px 0;
+  animation: rainFall 0.6s linear infinite;
+}
+@keyframes rainFall {
+  from { background-position: 0 -60px, 20px -50px; }
+  to   { background-position: 0 0,     20px 0; }
+}
+
+/* ---------- Creature ---------- */
+#creature {
+  position: absolute;
+  top: 18%;
+  right: -160px;            /* start off-screen right */
+  width: 120px;
+  height: auto;
+  opacity: 0.45;
+  filter: blur(0.4px);
+  z-index: 3;
+  pointer-events: none;
+  transition: none;
+}
+.creature-drifting {
+  animation: creatureDrift 45s linear forwards;
+}
+@keyframes creatureDrift {
+  /* Start just off-screen right, end fully off-screen left, with a tiny vertical sway */
+  0%   { transform: translateX(0)               translateY(0); }
+  25%  { transform: translateX(calc(-25vw - 40px)) translateY(-12px); }
+  50%  { transform: translateX(calc(-50vw - 80px)) translateY(6px); }
+  75%  { transform: translateX(calc(-75vw - 120px)) translateY(-8px); }
+  100% { transform: translateX(calc(-100vw - 280px)) translateY(0); }
+}
+
+/* ---------- Dragon ---------- */
+#dragon-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220px;
+  height: 180px;
+  margin-left: -110px;
+  margin-top: -90px;
+  z-index: 5;
+  /* JS sets transform translate() for movement; idle animation lives on the inner img */
+  will-change: transform;
+}
+#dragon {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.25));
+  /* facing right by default; .facing-left flips horizontally */
+  animation: dragonIdle 3s ease-in-out infinite;
+  transform-origin: 50% 60%;
+}
+#dragon-wrap.facing-left #dragon {
+  /* Flip horizontally — combined with idle animation via separate transform on img */
+  animation: dragonIdleFlipped 3s ease-in-out infinite;
+}
+
+@keyframes dragonIdle {
+  0%, 100% { transform: translateY(0)   rotate(-1.2deg); }
+  50%      { transform: translateY(-3px) rotate(1.2deg); }
+}
+@keyframes dragonIdleFlipped {
+  0%, 100% { transform: translateY(0)   rotate(-1.2deg) scaleX(-1); }
+  50%      { transform: translateY(-3px) rotate(1.2deg) scaleX(-1); }
+}
+
+/* ---------- Dragon name display ---------- */
+#dragon-name-display {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  font-family: 'Caveat', cursive;
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  z-index: 10;
+  pointer-events: none;
+  letter-spacing: 0.3px;
+}
+
+/* ---------- Corner buttons (mute, toolbox) ---------- */
+.corner-btn {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  transition: transform 0.15s ease, background 0.2s ease;
+  backdrop-filter: blur(6px);
+}
+.corner-btn:active { transform: scale(0.93); }
+
+#mute-btn    { top: 18px;    right: 22px; }
+#toolbox-btn { bottom: 22px; right: 22px; }
+
+#mute-btn .icon-unmuted { display: none; }
+#mute-btn.unmuted .icon-muted   { display: none; }
+#mute-btn.unmuted .icon-unmuted { display: inline; }
+
+/* ---------- Toolbox panel ---------- */
+#toolbox-panel {
+  position: absolute;
+  bottom: 90px;
+  right: 22px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 22px;
+  padding: 18px 18px 16px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+  z-index: 19;
+  min-width: 180px;
+  animation: panelPop 0.22s ease;
+}
+@keyframes panelPop {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toolbox-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #5b4a7a;
+  margin-bottom: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.toolbox-buttons { display: flex; flex-direction: column; gap: 8px; }
+.weather-btn {
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #f3eefa;
+  font-size: 17px;
+  font-weight: 600;
+  color: #3a2e55;
+  text-align: left;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.weather-btn:active   { transform: scale(0.97); }
+.weather-btn.active   { background: #d8c8f2; box-shadow: inset 0 0 0 2px #a489d6; }
+
+/* ---------- D-pad controls ---------- */
+#controls {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 168px;
+  display: grid;
+  grid-template-columns: 56px 56px 56px;
+  grid-template-rows: 56px 56px 56px;
+  gap: 8px;
+  justify-content: center;
+  align-content: center;
+  z-index: 15;
+}
+.pad-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.18);
+  font-size: 22px;
+  color: #4a3a72;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.15s ease;
+  backdrop-filter: blur(4px);
+}
+.pad-btn:active { transform: scale(0.92); background: rgba(255, 255, 255, 1); }
+.pad-up    { grid-column: 2; grid-row: 1; }
+.pad-left  { grid-column: 1; grid-row: 2; }
+.pad-right { grid-column: 3; grid-row: 2; }
+.pad-down  { grid-column: 2; grid-row: 3; }
+
+/* ---------- Naming modal ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 14, 40, 0.55);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: linear-gradient(160deg, #fff8f0 0%, #ffe9f1 100%);
+  border-radius: 28px;
+  padding: 40px 44px 36px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  text-align: center;
+  max-width: 460px;
+  width: 90%;
+  animation: modalRise 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes modalRise {
+  from { opacity: 0; transform: translateY(20px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.modal h1 {
+  font-family: 'Caveat', cursive;
+  font-size: 44px;
+  font-weight: 700;
+  color: #4a2e6b;
+  margin: 0 0 22px;
+  line-height: 1.1;
+}
+#name-input {
+  width: 100%;
+  padding: 14px 18px;
+  font-family: 'Caveat', cursive;
+  font-size: 32px;
+  text-align: center;
+  border: 2px solid #d8c4ee;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #3a2255;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#name-input:focus {
+  border-color: #a489d6;
+  box-shadow: 0 0 0 4px rgba(164, 137, 214, 0.25);
+}
+#name-submit {
+  margin-top: 22px;
+  padding: 14px 32px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #a489d6 0%, #d68bbf 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 18px rgba(164, 137, 214, 0.4);
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+#name-submit:active { transform: scale(0.96); }
+#name-submit:disabled { opacity: 0.5; cursor: not-allowed; }

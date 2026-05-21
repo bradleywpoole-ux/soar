@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Soar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Soar" />
+  <meta name="theme-color" content="#a3c9ff" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Quicksand:wght@400;600&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="scene" class="weather-sunny">
+    <!-- Weather effect layers -->
+    <div id="sun-rays" class="weather-layer"></div>
+    <div id="clouds" class="weather-layer">
+      <div class="cloud cloud-1"></div>
+      <div class="cloud cloud-2"></div>
+      <div class="cloud cloud-3"></div>
+      <div class="cloud cloud-4"></div>
+    </div>
+    <div id="rain" class="weather-layer"></div>
+
+    <!-- Drifting background creature -->
+    <img id="creature" src="assets/creature.png" alt="" />
+
+    <!-- Ground strip -->
+    <div id="ground"></div>
+
+    <!-- Dragon (focal point) -->
+    <div id="dragon-wrap">
+      <img id="dragon" src="assets/dragon.png" alt="dragon" />
+    </div>
+
+    <!-- Dragon name display (top-left) -->
+    <div id="dragon-name-display" hidden></div>
+
+    <!-- Mute toggle (top-right) -->
+    <button id="mute-btn" class="corner-btn" aria-label="Toggle music">
+      <span class="icon icon-muted">🔇</span>
+      <span class="icon icon-unmuted">🔊</span>
+    </button>
+
+    <!-- Toolbox (bottom-right) -->
+    <button id="toolbox-btn" class="corner-btn" aria-label="Open toolbox">🧰</button>
+    <div id="toolbox-panel" hidden>
+      <div class="toolbox-title">Weather</div>
+      <div class="toolbox-buttons">
+        <button class="weather-btn" data-weather="sunny">☀️ Sunny</button>
+        <button class="weather-btn" data-weather="cloudy">☁️ Cloudy</button>
+        <button class="weather-btn" data-weather="rainy">🌧️ Rainy</button>
+      </div>
+    </div>
+
+    <!-- D-pad controls (bottom-center) -->
+    <div id="controls">
+      <button class="pad-btn pad-up" data-dir="up" aria-label="Up">▲</button>
+      <button class="pad-btn pad-left" data-dir="left" aria-label="Left">◀</button>
+      <button class="pad-btn pad-right" data-dir="right" aria-label="Right">▶</button>
+      <button class="pad-btn pad-down" data-dir="down" aria-label="Down">▼</button>
+    </div>
+
+    <!-- Background music -->
+    <audio id="music" src="assets/music.mp3" loop preload="auto"></audio>
+  </div>
+
+  <!-- Naming modal -->
+  <div id="name-modal" class="modal-backdrop" hidden>
+    <div class="modal">
+      <h1>What is your dragon's name?</h1>
+      <input id="name-input" type="text" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" />
+      <button id="name-submit">That's the name</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
