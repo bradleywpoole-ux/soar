@@ -161,10 +161,10 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 220px;
-  height: 180px;
-  margin-left: -110px;
-  margin-top: -90px;
+  width: 150px;
+  height: 150px;
+  margin-left: -75px;
+  margin-top: -75px;
   z-index: 5;
   /* JS sets transform translate() for movement; idle animation lives on the inner img */
   will-change: transform;
@@ -173,23 +173,30 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   width: 100%;
   height: 100%;
   display: block;
-  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.25));
-  /* facing right by default; .facing-left flips horizontally */
+  /* object-fit: contain keeps the dragon's aspect ratio if the wrap
+     ever changes proportions — a defensive guard, not strictly needed
+     for the current square image. */
+  object-fit: contain;
+  /* Soft shadow respects the PNG alpha, so semi-transparent wings
+     don't get a hard outline. */
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.22));
   animation: dragonIdle 3s ease-in-out infinite;
   transform-origin: 50% 60%;
 }
+/* Source artwork faces left. Default state mirrors it so the dragon
+   reads as facing RIGHT (matching "moving right by default"), and
+   the .facing-left class removes the mirror to show the art as drawn. */
 #dragon-wrap.facing-left #dragon {
-  /* Flip horizontally — combined with idle animation via separate transform on img */
   animation: dragonIdleFlipped 3s ease-in-out infinite;
 }
 
 @keyframes dragonIdle {
-  0%, 100% { transform: translateY(0)   rotate(-1.2deg); }
-  50%      { transform: translateY(-3px) rotate(1.2deg); }
-}
-@keyframes dragonIdleFlipped {
   0%, 100% { transform: translateY(0)   rotate(-1.2deg) scaleX(-1); }
   50%      { transform: translateY(-3px) rotate(1.2deg) scaleX(-1); }
+}
+@keyframes dragonIdleFlipped {
+  0%, 100% { transform: translateY(0)   rotate(-1.2deg); }
+  50%      { transform: translateY(-3px) rotate(1.2deg); }
 }
 
 /* ---------- Dragon name display ---------- */
