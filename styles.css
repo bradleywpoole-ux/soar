@@ -42,9 +42,12 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   transition: background 1.5s ease;
 }
 
-.weather-sunny  { background: linear-gradient(180deg, #a3c9ff 0%, #ffd1dc 100%); }
-.weather-cloudy { background: linear-gradient(180deg, #c8cbd4 0%, #d6c9e6 100%); }
-.weather-rainy  { background: linear-gradient(180deg, #2d3a6b 0%, #4a3b7a 100%); }
+/* `#scene.weather-X` (1,1,0) beats the bare `#scene` (1,0,0) rule
+   above so these sky gradients actually take effect on class change.
+   With just `.weather-X` (0,1,0) the ID selector would always win. */
+#scene.weather-sunny  { background: linear-gradient(180deg, #a3c9ff 0%, #ffd1dc 100%); }
+#scene.weather-cloudy { background: linear-gradient(180deg, #c8cbd4 0%, #d6c9e6 100%); }
+#scene.weather-rainy  { background: linear-gradient(180deg, #2d3a6b 0%, #4a3b7a 100%); }
 
 /* ---------- Ground ---------- */
 #ground {
@@ -117,18 +120,27 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   to   { transform: translateX(calc(100vw + 400px)); }
 }
 
-/* Rain — animated falling drops */
+/* Rain — soft vertical droplets falling slowly from top to bottom.
+   Two layered radial-gradient patterns at different scales create a
+   sense of depth. Each "droplet" is a small tall ellipse with a soft
+   alpha falloff, so it blends gently against the sky. */
 #rain {
   background-image:
-    linear-gradient(180deg, transparent 60%, rgba(180, 200, 255, 0.55) 60%, rgba(180, 200, 255, 0.55) 70%, transparent 70%),
-    linear-gradient(180deg, transparent 50%, rgba(200, 215, 255, 0.45) 50%, rgba(200, 215, 255, 0.45) 60%, transparent 60%);
-  background-size: 3px 60px, 2px 50px;
-  background-position: 0 0, 20px 0;
-  animation: rainFall 0.6s linear infinite;
+    radial-gradient(ellipse 1.5px 6px at 50% 50%,
+      rgba(220, 235, 255, 0.70) 0%, rgba(220, 235, 255, 0) 70%),
+    radial-gradient(ellipse 2px 8px at 50% 50%,
+      rgba(195, 215, 245, 0.50) 0%, rgba(195, 215, 245, 0) 70%);
+  background-size: 72px 96px, 108px 144px;
+  background-position: 0 0, 36px 48px;
+  /* Loops every cycle by shifting each layer down exactly one tile
+     height (96px / 144px), so the pattern aligns identically at the
+     loop boundary — no visible jump. */
+  animation: rainFall 1.8s linear infinite;
+  will-change: background-position;
 }
 @keyframes rainFall {
-  from { background-position: 0 -60px, 20px -50px; }
-  to   { background-position: 0 0,     20px 0; }
+  from { background-position: 0 0,    36px 48px;  }
+  to   { background-position: 0 96px, 36px 192px; }
 }
 
 /* ---------- Creature ---------- */
