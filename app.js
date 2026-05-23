@@ -31,7 +31,7 @@
   // Position stored as the dragon's center, in viewport pixels.
   const DRAGON_W = 220;
   const DRAGON_H = 180;
-  const GROUND_H = 96;
+  const GROUND_H = 80;
   const SPEED_PX_PER_SEC = 220; // calm pace
 
   const clampPos = (x, y) => {

@@ -1,5 +1,13 @@
 /* ---------- Reset & base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
+:root {
+  /* Layout knobs. Ground sits at the bottom; controls sit above it
+     with `--pad-gap` of breathing room. All offsets at the bottom of
+     the screen add `env(safe-area-inset-bottom)` so they stay clear
+     of the iPad home indicator and any Safari bottom chrome. */
+  --ground-h: 80px;
+  --pad-gap: 14px;
+}
 html, body {
   margin: 0;
   padding: 0;
@@ -20,9 +28,14 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 /* ---------- Scene ---------- */
 #scene {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100vw;
+  /* 100svh = the *small* viewport height (visible area when browser
+     chrome is showing). Prevents fixed children from being pushed
+     under Safari's URL bar. Fall back to vh on browsers without svh. */
   height: 100vh;
+  height: 100svh;
   overflow: hidden;
   /* Sky gradient transitions smoothly when weather changes */
   background: linear-gradient(180deg, #a3c9ff 0%, #ffd1dc 100%);
@@ -39,11 +52,14 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   left: 0;
   right: 0;
   bottom: 0;
-  height: 96px;
+  /* Extend visually below the safe-area inset so the texture reaches
+     the actual screen edge on iPad, even though the dragon's playable
+     ground line stays at --ground-h. */
+  height: calc(var(--ground-h) + env(safe-area-inset-bottom, 0px));
   background-image: url('assets/ground.png');
   background-repeat: repeat-x;
-  background-size: auto 100%;
-  background-position: bottom left;
+  background-size: auto var(--ground-h);
+  background-position: left top;
   z-index: 2;
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
 }
@@ -179,8 +195,8 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 /* ---------- Dragon name display ---------- */
 #dragon-name-display {
   position: absolute;
-  top: 18px;
-  left: 22px;
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
+  left: calc(env(safe-area-inset-left, 0px) + 22px);
   font-family: 'Caveat', cursive;
   font-size: 28px;
   font-weight: 700;
@@ -209,8 +225,15 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 }
 .corner-btn:active { transform: scale(0.93); }
 
-#mute-btn    { top: 18px;    right: 22px; }
-#toolbox-btn { bottom: 22px; right: 22px; }
+#mute-btn {
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
+  right: calc(env(safe-area-inset-right, 0px) + 22px);
+}
+#toolbox-btn {
+  /* Sit just above the ground strip and clear of the home indicator. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--ground-h) + var(--pad-gap));
+  right: calc(env(safe-area-inset-right, 0px) + 22px);
+}
 
 #mute-btn .icon-unmuted { display: none; }
 #mute-btn.unmuted .icon-muted   { display: none; }
@@ -219,8 +242,9 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 /* ---------- Toolbox panel ---------- */
 #toolbox-panel {
   position: absolute;
-  bottom: 90px;
-  right: 22px;
+  /* Opens just above the toolbox button (which is itself above the ground). */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--ground-h) + var(--pad-gap) + 68px);
+  right: calc(env(safe-area-inset-right, 0px) + 22px);
   background: rgba(255, 255, 255, 0.95);
   border-radius: 22px;
   padding: 18px 18px 16px;
@@ -258,26 +282,28 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 /* ---------- D-pad controls ---------- */
 #controls {
   position: absolute;
-  bottom: 28px;
+  /* Sits ABOVE the ground strip with `--pad-gap` of margin and
+     `safe-area-inset-bottom` of clearance from the home indicator —
+     so the down arrow is never obscured. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--ground-h) + var(--pad-gap));
   left: 50%;
   transform: translateX(-50%);
-  width: 240px;
+  /* 3 × 52px + 2 × 6px = 168px square — fits the diamond exactly. */
+  width: 168px;
   height: 168px;
   display: grid;
-  grid-template-columns: 56px 56px 56px;
-  grid-template-rows: 56px 56px 56px;
-  gap: 8px;
-  justify-content: center;
-  align-content: center;
+  grid-template-columns: 52px 52px 52px;
+  grid-template-rows: 52px 52px 52px;
+  gap: 6px;
   z-index: 15;
 }
 .pad-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.18);
-  font-size: 22px;
+  font-size: 20px;
   color: #4a3a72;
   display: flex;
   align-items: center;
