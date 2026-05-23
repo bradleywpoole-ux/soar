@@ -80,7 +80,11 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 .weather-cloudy #clouds   { opacity: 1; }
 .weather-rainy  #rain     { opacity: 1; }
 
-/* Sun rays — soft radial glow from top with a slow gentle pulse */
+/* Sun rays — soft radial glow from top. The gentle pulse runs ONLY while
+   .weather-sunny is on. Previously the animation lived on the base
+   #sun-rays selector and animated `opacity`, which (because CSS
+   animations override non-!important declarations) forced opacity up
+   to 0.78–1 even in Rainy/Cloudy modes — the rays stayed visible. */
 #sun-rays {
   background:
     radial-gradient(ellipse at 50% -10%, rgba(255, 245, 200, 0.75) 0%, rgba(255, 245, 200, 0.0) 55%),
@@ -92,6 +96,8 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
       rgba(255, 240, 200, 0.0) 80deg,
       rgba(255, 240, 200, 0.25) 100deg,
       rgba(255, 240, 200, 0.0) 120deg);
+}
+#scene.weather-sunny #sun-rays {
   animation: sunPulse 6s ease-in-out infinite;
 }
 @keyframes sunPulse {
