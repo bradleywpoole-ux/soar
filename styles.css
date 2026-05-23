@@ -1,11 +1,20 @@
 /* ---------- Reset & base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 :root {
-  /* Layout knobs. Ground sits at the bottom; controls sit above it
-     with `--pad-gap` of breathing room. All offsets at the bottom of
-     the screen add `env(safe-area-inset-bottom)` so they stay clear
-     of the iPad home indicator and any Safari bottom chrome. */
+  /* Layout knobs.
+     `--ground-h` is the *playable floor* anchor — where controls/toolbox
+     sit and (historically) where the ground strip ended. Kept at 80px
+     so the d-pad position and safe-area math don't shift when the
+     visual ground art gets taller.
+     `--forest-h` is the *visual* height of the decorative forest band.
+     It's deliberately taller than --ground-h: the dragon's clamp keeps
+     it above the trees, but the trees themselves extend higher into
+     the sky for a proper landscape feel.
+     `--pad-gap` is the breathing room between the floor and the controls.
+     All bottom offsets add env(safe-area-inset-bottom) so nothing sits
+     behind the iPad home indicator or Safari chrome. */
   --ground-h: 80px;
+  --forest-h: 240px;
   --pad-gap: 14px;
 }
 html, body {
@@ -49,22 +58,36 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 #scene.weather-cloudy { background: linear-gradient(180deg, #c8cbd4 0%, #d6c9e6 100%); }
 #scene.weather-rainy  { background: linear-gradient(180deg, #2d3a6b 0%, #4a3b7a 100%); }
 
-/* ---------- Ground ---------- */
+/* ---------- Ground (forest landscape) ---------- */
 #ground {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  /* Extend visually below the safe-area inset so the texture reaches
-     the actual screen edge on iPad, even though the dragon's playable
-     ground line stays at --ground-h. */
-  height: calc(var(--ground-h) + env(safe-area-inset-bottom, 0px));
+  /* Use the *forest* height for the visible band so the trees read as
+     a landscape, not a sliver. Extend below the safe-area inset so
+     the texture reaches the actual screen edge on iPads with a home
+     indicator. The dragon's invisible floor (in app.js) stays just
+     above the dense foliage — see GROUND_H there. */
+  height: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px));
   background-image: url('assets/ground.png');
-  background-repeat: repeat-x;
-  background-size: auto var(--ground-h);
-  background-position: left top;
+  /* One copy fills the viewport width; aspect ratio is preserved by
+     `cover`. Anchoring to bottom-center keeps the grass + lower trees
+     fully visible and crops the cream sky area off the *top* of the
+     image instead of squashing or stretching it. */
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center bottom;
   z-index: 2;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
+  /* Even after cropping the cream top off the image, the upper foliage
+     still has cream gaps between leaves. A soft alpha mask fades those
+     into the sky so the forest top blends instead of showing as a
+     hard horizon line. The bottom 70% stays fully opaque (solid trees
+     + grass). */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 30%, black 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, black 30%, black 100%);
+  /* No box-shadow — the soft fade itself does the sky-to-forest blend;
+     a shadow at the top edge would draw the hard line we're hiding. */
 }
 
 /* ---------- Weather layers ---------- */

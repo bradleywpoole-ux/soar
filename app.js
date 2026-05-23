@@ -31,7 +31,12 @@
   // Position stored as the dragon's center, in viewport pixels.
   const DRAGON_W = 150;
   const DRAGON_H = 150;
-  const GROUND_H = 80;
+  // Invisible floor for the dragon's clamp. Sits ~40px above where the
+  // forest's soft fade fully resolves into trees (mask reaches 100% at
+  // ~156px from viewport bottom on a 240px-tall forest band), so the
+  // dragon hovers in the misty treetop region instead of sinking into
+  // dense foliage. Visual forest height (--forest-h in CSS) is 240px.
+  const GROUND_H = 200;
   const SPEED_PX_PER_SEC = 220; // calm pace
 
   const clampPos = (x, y) => {
