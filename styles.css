@@ -149,13 +149,24 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   to   { background-position: 0 96px, 36px 192px; }
 }
 
-/* ---------- Creature ---------- */
+/* ---------- Creature (background phoenix) ---------- */
 #creature {
   position: absolute;
   top: 18%;
-  right: -160px;            /* start off-screen right */
-  width: 120px;
+  /* Start fully off-screen right. The phoenix art is ~190px wide,
+     so we offset by more than that to guarantee it isn't peeking
+     on-screen before the drift animation begins. */
+  right: -220px;
+  width: 190px;
+  /* `aspect-ratio` + `object-fit: contain` keep the phoenix's
+     natural 667×374 proportions even if the width is ever tuned. */
+  aspect-ratio: 667 / 374;
   height: auto;
+  object-fit: contain;
+  /* Recessed atmosphere — not focal. Low opacity puts it behind
+     the dragon visually; a tiny blur softens any sub-pixel artifacts
+     in the wispy tail. No box-shadow / background — the alpha-channel
+     PNG blends straight onto the sky with no edge. */
   opacity: 0.45;
   filter: blur(0.4px);
   z-index: 3;
