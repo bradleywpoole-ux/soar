@@ -149,40 +149,52 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   to   { background-position: 0 96px, 36px 192px; }
 }
 
-/* ---------- Creature (background phoenix) ---------- */
-#creature {
+/* ---------- Creature (companion phoenix) ----------
+   The wrap is the position container — its transform is set by JS
+   each frame to track the dragon with a gentle lag. The inner <img>
+   carries the CSS idle bob so the two transforms compose without
+   fighting (same pattern as the dragon). */
+#creature-wrap {
   position: absolute;
-  top: 18%;
-  /* Start fully off-screen right. The phoenix art is ~190px wide,
-     so we offset by more than that to guarantee it isn't peeking
-     on-screen before the drift animation begins. */
-  right: -220px;
+  left: 50%;
+  top: 50%;
   width: 190px;
-  /* `aspect-ratio` + `object-fit: contain` keep the phoenix's
-     natural 667×374 proportions even if the width is ever tuned. */
+  /* Centered on the (left, top) origin via margin so the JS translate
+     positions the phoenix's center, just like the dragon. Height
+     follows the natural 667x374 aspect ratio. */
   aspect-ratio: 667 / 374;
-  height: auto;
-  object-fit: contain;
-  /* Recessed atmosphere — not focal. Low opacity puts it behind
-     the dragon visually; a tiny blur softens any sub-pixel artifacts
-     in the wispy tail. No box-shadow / background — the alpha-channel
-     PNG blends straight onto the sky with no edge. */
+  margin-left: -95px;
+  margin-top: -53.5px;        /* half of 190 * 374/667 ≈ 106.5 / 2 */
+  z-index: 3;                 /* behind the dragon (z-index 5) */
+  pointer-events: none;
+  /* Recessed atmosphere — low opacity puts it behind the dragon
+     visually, blur softens sub-pixel artifacts in the wispy tail.
+     No background-color / box-shadow so the alpha PNG blends
+     straight onto the sky with no hard edge. */
   opacity: 0.45;
   filter: blur(0.4px);
-  z-index: 3;
-  pointer-events: none;
-  transition: none;
+  will-change: transform;
 }
-.creature-drifting {
-  animation: creatureDrift 45s linear forwards;
+#creature {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  /* Gentle idle float — slower and more subtle than the dragon's. */
+  animation: phoenixIdle 3.5s ease-in-out infinite;
 }
-@keyframes creatureDrift {
-  /* Start just off-screen right, end fully off-screen left, with a tiny vertical sway */
-  0%   { transform: translateX(0)               translateY(0); }
-  25%  { transform: translateX(calc(-25vw - 40px)) translateY(-12px); }
-  50%  { transform: translateX(calc(-50vw - 80px)) translateY(6px); }
-  75%  { transform: translateX(calc(-75vw - 120px)) translateY(-8px); }
-  100% { transform: translateX(calc(-100vw - 280px)) translateY(0); }
+/* Source art faces RIGHT (body on the right, tail trailing left).
+   Default state needs no mirror; .facing-left flips to mirror it. */
+#creature-wrap.facing-left #creature {
+  animation: phoenixIdleFlipped 3.5s ease-in-out infinite;
+}
+@keyframes phoenixIdle {
+  0%, 100% { transform: translateY(0)    rotate(-0.6deg); }
+  50%      { transform: translateY(-4px) rotate(0.6deg); }
+}
+@keyframes phoenixIdleFlipped {
+  0%, 100% { transform: translateY(0)    rotate(-0.6deg) scaleX(-1); }
+  50%      { transform: translateY(-4px) rotate(0.6deg) scaleX(-1); }
 }
 
 /* ---------- Dragon ---------- */

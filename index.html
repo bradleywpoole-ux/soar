@@ -27,8 +27,12 @@
     </div>
     <div id="rain" class="weather-layer"></div>
 
-    <!-- Drifting background creature -->
-    <img id="creature" src="assets/creature.png" alt="" />
+    <!-- Companion phoenix — follows the dragon with a gentle lag.
+         Wrap holds the JS-driven position transform; the inner img
+         carries the CSS idle bob/sway so the two transforms don't fight. -->
+    <div id="creature-wrap">
+      <img id="creature" src="assets/creature.png" alt="" />
+    </div>
 
     <!-- Ground strip -->
     <div id="ground"></div>

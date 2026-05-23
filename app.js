@@ -17,7 +17,7 @@
   // ---------- DOM ----------
   const scene       = document.getElementById('scene');
   const dragonWrap  = document.getElementById('dragon-wrap');
-  const creature    = document.getElementById('creature');
+  const creatureWrap= document.getElementById('creature-wrap');
   const nameDisplay = document.getElementById('dragon-name-display');
   const modal       = document.getElementById('name-modal');
   const nameInput   = document.getElementById('name-input');
@@ -84,6 +84,32 @@
     }, 300);
   };
 
+  // ---------- Companion phoenix state ----------
+  // Phoenix tracks the dragon with a gentle lag: a separate facing state
+  // and (x, y) that ease toward the dragon's "trailing slot" each frame.
+  const PHOENIX_TRAIL_X = 130;       // px behind dragon along the facing axis
+  const PHOENIX_TRAIL_Y = -55;       // negative = slightly above dragon
+  const PHOENIX_CATCHUP_RATE = 5;    // 1/s — higher = snappier ease
+  const PHOENIX_FLIP_DELAY_MS = 350; // facing-flip lag after dragon turns
+
+  // Phoenix facing trails dragon facing on a timer so the flip happens
+  // a moment after the dragon's. The trail-offset side flips at the same
+  // time, so the phoenix doesn't slingshot through the dragon when the
+  // dragon turns — it stays on the old side until its own flip fires.
+  let phoenixFacingLeft = facingLeft;
+  let lastSeenDragonFacing = facingLeft;
+  let phoenixFlipTimer = null;
+  let phoenixX = pos.x + (phoenixFacingLeft ? PHOENIX_TRAIL_X : -PHOENIX_TRAIL_X);
+  let phoenixY = pos.y + PHOENIX_TRAIL_Y;
+
+  const applyPhoenixTransform = () => {
+    const dx = phoenixX - window.innerWidth / 2;
+    const dy = phoenixY - window.innerHeight / 2;
+    creatureWrap.style.transform = `translate(${dx}px, ${dy}px)`;
+  };
+  creatureWrap.classList.toggle('facing-left', phoenixFacingLeft);
+  applyPhoenixTransform();
+
   const tick = (now) => {
     const dt = lastFrame ? Math.min((now - lastFrame) / 1000, 0.05) : 0;
     lastFrame = now;
@@ -108,6 +134,28 @@
         schedulePosSave();
       }
     }
+
+    // When the dragon flips, schedule the phoenix to flip a moment later.
+    // Cancel any pending flip if the dragon turns again before it fires.
+    if (facingLeft !== lastSeenDragonFacing) {
+      lastSeenDragonFacing = facingLeft;
+      clearTimeout(phoenixFlipTimer);
+      phoenixFlipTimer = setTimeout(() => {
+        phoenixFacingLeft = facingLeft;
+        creatureWrap.classList.toggle('facing-left', phoenixFacingLeft);
+      }, PHOENIX_FLIP_DELAY_MS);
+    }
+
+    // Ease phoenix toward its trailing slot behind the dragon. Frame-rate
+    // independent: same feel at 30fps and 60fps. After ~0.3s the phoenix
+    // has closed >75% of the gap, after ~0.6s >95%.
+    const targetX = pos.x + (phoenixFacingLeft ? PHOENIX_TRAIL_X : -PHOENIX_TRAIL_X);
+    const targetY = pos.y + PHOENIX_TRAIL_Y;
+    const k = dt > 0 ? 1 - Math.exp(-PHOENIX_CATCHUP_RATE * dt) : 0;
+    phoenixX += (targetX - phoenixX) * k;
+    phoenixY += (targetY - phoenixY) * k;
+    applyPhoenixTransform();
+
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -171,22 +219,6 @@
     if (toolboxPanel.contains(e.target) || toolboxBtn.contains(e.target)) return;
     setToolbox(false);
   });
-
-  // ---------- Creature drift cycle ----------
-  const creatureCycle = () => {
-    // Reset to off-screen-right, then trigger the animation
-    creature.classList.remove('creature-drifting');
-    // force reflow so the animation restarts
-    void creature.offsetWidth;
-    creature.classList.add('creature-drifting');
-  };
-  creature.addEventListener('animationend', () => {
-    creature.classList.remove('creature-drifting');
-    const waitMs = 30000 + Math.random() * 30000; // 30–60s
-    setTimeout(creatureCycle, waitMs);
-  });
-  // Kick off after a short initial delay so the scene settles first
-  setTimeout(creatureCycle, 3000);
 
   // ---------- Music + mute ----------
   let muted = lsGet(KEY.muted, '1') === '1';
