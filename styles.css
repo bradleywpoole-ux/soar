@@ -80,20 +80,23 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
    so the rendered slice reads as the misty mid-distance, not the top
    sky or the foreground-ish lower silhouettes. */
 #bg-far {
-  /* Sits ABOVE the forest with a 24px overlap into the forest's
+  /* Sits ABOVE the forest with a 40px overlap into the forest's
      fade region so the bottom of the distant hills feathers behind
-     the misty treetops — sells the depth. */
-  bottom: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px) - 24px);
-  height: 160px;
+     the misty treetops — sells the depth and pushes the layer
+     visually further behind the forest. */
+  bottom: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px) - 40px);
+  height: 130px;
   background-image: url('assets/bg-far.png');
   /* Tile width 1500px keeps the hills modestly sized (~37% of source
-     width on iPad classic), not "giant" — scaled tile is 1500x421
-     so the layer's 160px height shows ~38% of the image height. */
+     width on iPad classic). Scaled tile is 1500x421, so the layer's
+     130px height shows ~31% of the image height. */
   background-size: 1500px auto;
   background-position-y: 50%;
   z-index: 2;
-  /* Lower opacity to read as distant haze. */
-  opacity: 0.75;
+  /* Lowered opacity so the layer reads as faint distant haze and
+     stops competing with the forest. Compose with the alpha-fade
+     mask below for a soft top edge. */
+  opacity: 0.55;
   /* Soft top fade so the distant hills don't have a hard edge
      against the sky on their upper silhouette. */
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 35%, black 100%);
@@ -109,22 +112,18 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
    leaks over the forest behind. */
 #bg-near {
   /* Sits at the very bottom of the screen, in front of the forest
-     (z=4 > forest's z=3). Layer height kept deliberately small so
-     this is a thin foreground strip — only the densest lower foliage
-     of the image shows. The forest (ground.png) stays the main
-     "world surface" visible behind/above bg-near, with this strip
-     adding close-camera foliage along the bottom edge. */
+     (z=4 > forest's z=3). Layer height halved from the previous tune
+     — a slim band along the bottom edge that frames the scene
+     rather than dominating it. The forest stays the main world
+     surface visible above this strip. */
   bottom: 0;
-  height: 120px;
+  height: 60px;
   background-image: url('assets/bg-near.png');
   /* Tile width 1200px keeps individual bushes/leaves at a foreground
-     scale that's smaller than the dragon (150px wide) so the dragon
-     stays the focal point. Scaled tile is 1200x337, of which the
-     layer shows the bottom 120px ≈ 36% = image positions 64-100% —
-     the dense lower foliage and grass at the very bottom of the
-     source. The image's upper white area was alpha-keyed during
-     pre-processing, so cream gaps between leaves in the visible
-     portion also show the forest behind. */
+     scale that's smaller than the dragon (150px wide). Scaled tile
+     is 1200x337, of which the layer now shows only the bottom 60px
+     ≈ 18% = image positions 82-100% — just the grass and densest
+     low foliage at the very bottom of the source image. */
   background-size: 1200px auto;
   background-position-y: 100%;
   z-index: 4;
