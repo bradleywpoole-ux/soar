@@ -71,13 +71,22 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
      above the dense foliage — see GROUND_H there. */
   height: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px));
   background-image: url('assets/ground.png');
-  /* One copy fills the viewport width; aspect ratio is preserved by
-     `cover`. Anchoring to bottom-center keeps the grass + lower trees
-     fully visible and crops the cream sky area off the *top* of the
-     image instead of squashing or stretching it. */
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center bottom;
+  /* Tiled horizontally so the forest can scroll indefinitely.
+     - `background-size: 100vw auto` makes each tile exactly one
+       viewport-width wide with aspect ratio preserved — same per-tree
+       visual scale as the previous `cover` rule, just now repeatable.
+     - `repeat-x` makes the browser draw as many copies as needed to
+       cover the band, including offscreen, so a non-zero
+       background-position-x never produces an empty edge.
+     - background-position-x is driven each frame by JS (set to
+       -cameraX) so the forest scrolls past as the camera moves.
+       Y stays pinned to the bottom of the band so grass stays at
+       the bottom and the cream-sky area of the image gets cropped
+       off the top, as before. */
+  background-repeat: repeat-x;
+  background-size: 100vw auto;
+  background-position-x: 0;
+  background-position-y: 100%;
   z-index: 2;
   /* Even after cropping the cream top off the image, the upper foliage
      still has cream gaps between leaves. A soft alpha mask fades those

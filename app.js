@@ -16,6 +16,7 @@
 
   // ---------- DOM ----------
   const scene       = document.getElementById('scene');
+  const ground      = document.getElementById('ground');
   const dragonWrap  = document.getElementById('dragon-wrap');
   const creatureWrap= document.getElementById('creature-wrap');
   const nameDisplay = document.getElementById('dragon-name-display');
@@ -27,8 +28,21 @@
   const muteBtn     = document.getElementById('mute-btn');
   const music       = document.getElementById('music');
 
-  // ---------- Dragon position + movement ----------
-  // Position stored as the dragon's center, in viewport pixels.
+  // ---------- World + camera (Layer 1: horizontal scrolling) ----------
+  // Dragon position split into world space and screen space:
+  //   pos.x  = worldX. Unbounded. Persisted. What the phoenix follows.
+  //   pos.y  = viewport-relative Y. (No vertical world yet — later layer.)
+  //   cameraX = worldX shown at the horizontal center of the screen.
+  //
+  // Screen-X of any world entity = (entity.worldX - cameraX) + innerWidth/2.
+  // Wrap elements are CSS-centered via left:50% + negative margin, so their
+  // transform's translate dx is just (entity.worldX - cameraX) — same shape
+  // as before, only the right-hand side is now camera-relative.
+  //
+  // Camera uses a deadzone: a centered box of half-width
+  // DEADZONE_HALF_RATIO * innerWidth where the dragon can move freely
+  // without scrolling. The camera only seeks a new target when the dragon
+  // pushes outside that box, and it eases toward it — never snaps.
   const DRAGON_W = 150;
   const DRAGON_H = 150;
   // Invisible floor for the dragon's clamp. Sits ~40px above where the
@@ -37,20 +51,20 @@
   // dragon hovers in the misty treetop region instead of sinking into
   // dense foliage. Visual forest height (--forest-h in CSS) is 240px.
   const GROUND_H = 200;
-  const SPEED_PX_PER_SEC = 220; // calm pace
+  const SPEED_PX_PER_SEC = 220;        // calm pace
+  const DEADZONE_HALF_RATIO = 0.225;   // 45% of viewport (the middle 45% holds the dragon still)
+  const CAMERA_CATCHUP_RATE = 4;       // 1/s — exponential ease, calm
 
-  const clampPos = (x, y) => {
-    const minX = DRAGON_W / 2;
-    const maxX = window.innerWidth - DRAGON_W / 2;
+  const clampY = (y) => {
     const minY = DRAGON_H / 2;
     const maxY = window.innerHeight - GROUND_H - DRAGON_H / 2;
-    return {
-      x: Math.max(minX, Math.min(maxX, x)),
-      y: Math.max(minY, Math.min(maxY, y)),
-    };
+    return Math.max(minY, Math.min(maxY, y));
   };
 
   const defaultPos = () => ({
+    // Start centered on screen. worldX = innerWidth/2 is arbitrary (the
+    // world is infinite); same value for cameraX puts the dragon at
+    // screen center on first run.
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
   });
@@ -60,22 +74,42 @@
     if (!raw) return defaultPos();
     try {
       const p = JSON.parse(raw);
-      if (typeof p.x === 'number' && typeof p.y === 'number') return clampPos(p.x, p.y);
+      if (typeof p.x === 'number' && typeof p.y === 'number') {
+        // x is treated as worldX (no clamp — infinite world). y stays
+        // viewport-relative, clamped to the floor. Existing localStorage
+        // data written by the pre-scrolling version lands here with x =
+        // whatever the old on-screen x was; since cameraX initializes
+        // to pos.x below, the dragon appears centered on first load
+        // and the saved value just becomes the new world origin.
+        return { x: p.x, y: clampY(p.y) };
+      }
     } catch {}
     return defaultPos();
   };
 
   let pos = loadPos();
   let facingLeft = false;
+  // Start the camera on the dragon — first frame draws Ki Ki dead-center.
+  let cameraX = pos.x;
 
   const applyDragonTransform = () => {
-    // dragon-wrap is centered via margin offsets; translate from its CSS center
-    const dx = pos.x - window.innerWidth / 2;
+    // Wrap is CSS-centered; translate offsets from viewport center.
+    // For a world-space entity the on-screen offset is worldX - cameraX.
+    const dx = pos.x - cameraX;
     const dy = pos.y - window.innerHeight / 2;
     dragonWrap.style.transform = `translate(${dx}px, ${dy}px)`;
     dragonWrap.classList.toggle('facing-left', facingLeft);
   };
+
+  const applyGroundScroll = () => {
+    // Forest scrolls 1:1 with the camera (no parallax in Layer 1).
+    // Negative position shifts the tile leftward as cameraX grows;
+    // background-repeat: repeat-x makes this seamlessly loop.
+    ground.style.backgroundPositionX = `${-cameraX}px`;
+  };
+
   applyDragonTransform();
+  applyGroundScroll();
 
   // Held-direction state — buttons set/unset flags; an rAF loop moves the dragon.
   const held = { up: false, down: false, left: false, right: false };
@@ -108,7 +142,9 @@
   let phoenixY = pos.y + PHOENIX_TRAIL_Y;
 
   const applyPhoenixTransform = () => {
-    const dx = phoenixX - window.innerWidth / 2;
+    // phoenixX is in world space (it follows pos.x = worldX with an offset),
+    // so the on-screen offset from viewport center is phoenixX - cameraX.
+    const dx = phoenixX - cameraX;
     const dy = phoenixY - window.innerHeight / 2;
     creatureWrap.style.transform = `translate(${dx}px, ${dy}px)`;
   };
@@ -130,15 +166,37 @@
       const len = Math.hypot(dx, dy);
       dx /= len; dy /= len;
       const move = SPEED_PX_PER_SEC * dt;
-      const next = clampPos(pos.x + dx * move, pos.y + dy * move);
-      if (next.x !== pos.x || next.y !== pos.y) {
-        pos = next;
+      // worldX is unbounded (infinite world), Y stays viewport-clamped.
+      const nextX = pos.x + dx * move;
+      const nextY = clampY(pos.y + dy * move);
+      if (nextX !== pos.x || nextY !== pos.y) {
+        pos.x = nextX;
+        pos.y = nextY;
         if (dx < 0) facingLeft = true;
         else if (dx > 0) facingLeft = false;
-        applyDragonTransform();
         schedulePosSave();
       }
     }
+
+    // ----- Camera follow with deadzone -----
+    // If the dragon is inside the deadzone, the camera holds still.
+    // Outside the deadzone, the camera seeks a target that just barely
+    // brings the dragon back to the deadzone edge, then eases toward it
+    // (so reversing direction near the edge feels smooth, not jolty).
+    const deadzoneHalf = window.innerWidth * DEADZONE_HALF_RATIO;
+    const offsetFromCamera = pos.x - cameraX;
+    let cameraTargetX = cameraX;
+    if (offsetFromCamera >  deadzoneHalf) cameraTargetX = pos.x - deadzoneHalf;
+    else if (offsetFromCamera < -deadzoneHalf) cameraTargetX = pos.x + deadzoneHalf;
+    if (cameraTargetX !== cameraX) {
+      const camK = dt > 0 ? 1 - Math.exp(-CAMERA_CATCHUP_RATE * dt) : 0;
+      cameraX += (cameraTargetX - cameraX) * camK;
+    }
+
+    // Camera or dragon may have changed this frame — repaint both.
+    // (Cheap when no values changed; transforms are GPU-composited.)
+    applyDragonTransform();
+    applyGroundScroll();
 
     // When the dragon flips, schedule the phoenix to flip a moment later.
     // Cancel any pending flip if the dragon turns again before it fires.
@@ -185,10 +243,16 @@
     held.up = held.down = held.left = held.right = false;
   });
 
-  // Reclamp on resize / orientation change so dragon doesn't end up off-screen
+  // Reclamp on resize / orientation change so dragon doesn't end up below
+  // the (now possibly different) floor. World-X is intentionally not
+  // touched — the world is unbounded. The deadzone width re-computes
+  // from window.innerWidth on the next tick, and any mismatch eases out
+  // via the normal camera follow.
   window.addEventListener('resize', () => {
-    pos = clampPos(pos.x, pos.y);
+    pos.y = clampY(pos.y);
     applyDragonTransform();
+    applyGroundScroll();
+    applyPhoenixTransform();
   });
 
   // ---------- Weather ----------
