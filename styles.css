@@ -73,40 +73,58 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   pointer-events: none;
 }
 
-/* ---------- Parallax: far background (distant mountains/hills) ---------- */
+/* ---------- Parallax: far background (distant misty hills) ----------
+   Real source art: 4096x1152 (aspect ~3.56:1). The image is a vertical
+   stack of layered hills with pink-cloud sky bands between them; we
+   show only the middle horizontal band via `background-position-y: 50%`
+   so the rendered slice reads as the misty mid-distance, not the top
+   sky or the foreground-ish lower silhouettes. */
 #bg-far {
-  /* Sits ABOVE the top of the forest band so the distant shapes peek
-     out above the treeline. Height extends down into the forest's
-     fade region so the bottom of the mountains feathers into the
-     trees — when real art arrives the bottom of the image can also
-     blend into the forest's misty top edge. */
+  /* Sits ABOVE the forest with a 24px overlap into the forest's
+     fade region so the bottom of the distant hills feathers behind
+     the misty treetops — sells the depth. */
   bottom: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px) - 24px);
-  height: 100px;
+  height: 160px;
   background-image: url('assets/bg-far.png');
-  /* Fixed tile size: placeholder is 1200x100. Image natively repeats
-     seamlessly (its sine-waved silhouette returns to baseline at the
-     tile boundary). Real art should match these proportions, or the
-     size value can be tuned alongside it. */
-  background-size: 1200px auto;
-  background-position-y: 100%;
+  /* Tile width 1500px keeps the hills modestly sized (~37% of source
+     width on iPad classic), not "giant" — scaled tile is 1500x421
+     so the layer's 160px height shows ~38% of the image height. */
+  background-size: 1500px auto;
+  background-position-y: 50%;
   z-index: 2;
-  /* Lower opacity to read as distant haze. The bg-far placeholder also
-     uses its own alpha in the PNG; the two compose. */
+  /* Lower opacity to read as distant haze. */
   opacity: 0.75;
-  /* Soft top fade so the distant shapes don't have a hard edge
+  /* Soft top fade so the distant hills don't have a hard edge
      against the sky on their upper silhouette. */
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 35%, black 100%);
   mask-image: linear-gradient(180deg, transparent 0%, black 35%, black 100%);
 }
 
-/* ---------- Parallax: near foreground (close grass / leaves) ---------- */
+/* ---------- Parallax: near foreground (close foliage / grass) ----------
+   Real source art: 4096x1152 with a near-white background above the
+   foliage. The PNG has been pre-processed with a luminance alpha key
+   (see /tmp/key_white.py); pixels whose darkest channel was >= 215
+   are fully transparent, with a smooth ramp down to 180. So the upper
+   ~24% of the image is genuinely alpha-transparent — no white haze
+   leaks over the forest behind. */
 #bg-near {
-  /* Sits at the very bottom of the screen. The image is mostly
-     transparent above its grass band so the forest behind shows
-     through everywhere except the bottom edge. */
+  /* Sits at the very bottom of the screen, in front of the forest
+     (z=4 > forest's z=3). Layer height kept deliberately small so
+     this is a thin foreground strip — only the densest lower foliage
+     of the image shows. The forest (ground.png) stays the main
+     "world surface" visible behind/above bg-near, with this strip
+     adding close-camera foliage along the bottom edge. */
   bottom: 0;
-  height: 100px;
+  height: 120px;
   background-image: url('assets/bg-near.png');
+  /* Tile width 1200px keeps individual bushes/leaves at a foreground
+     scale that's smaller than the dragon (150px wide) so the dragon
+     stays the focal point. Scaled tile is 1200x337, of which the
+     layer shows the bottom 120px ≈ 36% = image positions 64-100% —
+     the dense lower foliage and grass at the very bottom of the
+     source. The image's upper white area was alpha-keyed during
+     pre-processing, so cream gaps between leaves in the visible
+     portion also show the forest behind. */
   background-size: 1200px auto;
   background-position-y: 100%;
   z-index: 4;
