@@ -17,6 +17,8 @@
   // ---------- DOM ----------
   const scene       = document.getElementById('scene');
   const ground      = document.getElementById('ground');
+  const bgFar       = document.getElementById('bg-far');
+  const bgNear      = document.getElementById('bg-near');
   const dragonWrap  = document.getElementById('dragon-wrap');
   const creatureWrap= document.getElementById('creature-wrap');
   const nameDisplay = document.getElementById('dragon-name-display');
@@ -103,15 +105,25 @@
     dragonWrap.classList.toggle('facing-left', facingLeft);
   };
 
-  const applyGroundScroll = () => {
-    // Forest scrolls 1:1 with the camera (no parallax in Layer 1).
-    // Negative position shifts the tile leftward as cameraX grows;
-    // background-repeat: repeat-x makes this seamlessly loop.
-    ground.style.backgroundPositionX = `${-cameraX}px`;
+  // ---------- Parallax layers ----------
+  // Each entry's element scrolls horizontally at -cameraX * speed.
+  // speed < 1 = slower than the world (distant); speed = 1 = forest;
+  // speed > 1 = faster than the world (close). repeat-x in CSS makes
+  // each tile loop seamlessly, so cameraX can grow without bound.
+  const PARALLAX_LAYERS = [
+    { el: bgFar,  speed: 0.30 },   // distant mountains/hills, far behind forest
+    { el: ground, speed: 1.00 },   // forest = the world's reference plane
+    { el: bgNear, speed: 1.60 },   // close grass/leaves, in front of forest
+  ];
+
+  const applyParallaxScroll = () => {
+    for (const layer of PARALLAX_LAYERS) {
+      layer.el.style.backgroundPositionX = `${-cameraX * layer.speed}px`;
+    }
   };
 
   applyDragonTransform();
-  applyGroundScroll();
+  applyParallaxScroll();
 
   // Held-direction state — buttons set/unset flags; an rAF loop moves the dragon.
   const held = { up: false, down: false, left: false, right: false };
@@ -198,7 +210,7 @@
     // Camera or dragon may have changed this frame — repaint both.
     // (Cheap when no values changed; transforms are GPU-composited.)
     applyDragonTransform();
-    applyGroundScroll();
+    applyParallaxScroll();
 
     // When the dragon flips, schedule the phoenix to flip a moment later.
     // Cancel any pending flip if the dragon turns again before it fires.
@@ -253,7 +265,7 @@
   window.addEventListener('resize', () => {
     pos.y = clampY(pos.y);
     applyDragonTransform();
-    applyGroundScroll();
+    applyParallaxScroll();
     applyPhoenixTransform();
   });
 

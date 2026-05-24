@@ -58,11 +58,64 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 #scene.weather-cloudy { background: linear-gradient(180deg, #c8cbd4 0%, #d6c9e6 100%); }
 #scene.weather-rainy  { background: linear-gradient(180deg, #2d3a6b 0%, #4a3b7a 100%); }
 
-/* ---------- Ground (forest landscape) ---------- */
-#ground {
+/* ---------- Parallax layers (shared base) ----------
+   Each scrolling background layer is a sibling div absolutely positioned
+   inside #scene. JS drives `background-position-x` to -cameraX * speed
+   each frame (see PARALLAX_LAYERS in app.js). repeat-x makes the tile
+   loop seamlessly in both directions. pointer-events: none so the layers
+   never swallow taps meant for buttons sitting above them. */
+.parallax-layer {
   position: absolute;
   left: 0;
   right: 0;
+  background-repeat: repeat-x;
+  background-position-x: 0;
+  pointer-events: none;
+}
+
+/* ---------- Parallax: far background (distant mountains/hills) ---------- */
+#bg-far {
+  /* Sits ABOVE the top of the forest band so the distant shapes peek
+     out above the treeline. Height extends down into the forest's
+     fade region so the bottom of the mountains feathers into the
+     trees — when real art arrives the bottom of the image can also
+     blend into the forest's misty top edge. */
+  bottom: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px) - 24px);
+  height: 100px;
+  background-image: url('assets/bg-far.png');
+  /* Fixed tile size: placeholder is 1200x100. Image natively repeats
+     seamlessly (its sine-waved silhouette returns to baseline at the
+     tile boundary). Real art should match these proportions, or the
+     size value can be tuned alongside it. */
+  background-size: 1200px auto;
+  background-position-y: 100%;
+  z-index: 2;
+  /* Lower opacity to read as distant haze. The bg-far placeholder also
+     uses its own alpha in the PNG; the two compose. */
+  opacity: 0.75;
+  /* Soft top fade so the distant shapes don't have a hard edge
+     against the sky on their upper silhouette. */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 35%, black 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, black 35%, black 100%);
+}
+
+/* ---------- Parallax: near foreground (close grass / leaves) ---------- */
+#bg-near {
+  /* Sits at the very bottom of the screen. The image is mostly
+     transparent above its grass band so the forest behind shows
+     through everywhere except the bottom edge. */
+  bottom: 0;
+  height: 100px;
+  background-image: url('assets/bg-near.png');
+  background-size: 1200px auto;
+  background-position-y: 100%;
+  z-index: 4;
+}
+
+/* ---------- Ground (forest landscape) ---------- */
+#ground {
+  /* `.parallax-layer` provides position/left/right/repeat/pointer-events.
+     This rule keeps only the forest-specific geometry, image, and mask. */
   bottom: 0;
   /* Use the *forest* height for the visible band so the trees read as
      a landscape, not a sliver. Extend below the safe-area inset so
@@ -90,11 +143,9 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
        Y stays pinned to the bottom of the band so grass stays at
        the bottom and the cream-sky area of the image gets cropped
        off the top, as before. */
-  background-repeat: repeat-x;
   background-size: 720px auto;
-  background-position-x: 0;
   background-position-y: 100%;
-  z-index: 2;
+  z-index: 3;
   /* Even after cropping the cream top off the image, the upper foliage
      still has cream gaps between leaves. A soft alpha mask fades those
      into the sky so the forest top blends instead of showing as a
@@ -204,7 +255,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   aspect-ratio: 667 / 374;
   margin-left: -95px;
   margin-top: -53.5px;        /* half of 190 * 374/667 ≈ 106.5 / 2 */
-  z-index: 3;                 /* behind the dragon (z-index 5) */
+  z-index: 5;                 /* in front of the parallax layers (bg-far=2, ground=3, bg-near=4), behind the dragon (z=6) */
   pointer-events: none;
   /* Recessed atmosphere — low opacity puts it behind the dragon
      visually, blur softens sub-pixel artifacts in the wispy tail.
@@ -245,7 +296,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   height: 150px;
   margin-left: -75px;
   margin-top: -75px;
-  z-index: 5;
+  z-index: 6;                 /* on top of every parallax layer and the phoenix companion */
   /* JS sets transform translate() for movement; idle animation lives on the inner img */
   will-change: transform;
 }

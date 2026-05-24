@@ -27,15 +27,25 @@
     </div>
     <div id="rain" class="weather-layer"></div>
 
+    <!-- Parallax: far background. Slow-scrolling distant shapes that
+         sit BEHIND the forest. Speed 0.3x relative to the camera. -->
+    <div id="bg-far" class="parallax-layer"></div>
+
+    <!-- Ground strip (forest) — speed 1.0x, the world's reference plane. -->
+    <div id="ground" class="parallax-layer"></div>
+
+    <!-- Parallax: near foreground. Fast-scrolling foreground tufts/leaves
+         along the very bottom, sitting IN FRONT of the forest. Speed 1.6x. -->
+    <div id="bg-near" class="parallax-layer"></div>
+
     <!-- Companion phoenix — follows the dragon with a gentle lag.
          Wrap holds the JS-driven position transform; the inner img
-         carries the CSS idle bob/sway so the two transforms don't fight. -->
+         carries the CSS idle bob/sway so the two transforms don't fight.
+         Rendered in front of the near-foreground layer so Ki Ki's
+         friend is never partially hidden by grass. -->
     <div id="creature-wrap">
       <img id="creature" src="assets/creature.png" alt="" />
     </div>
-
-    <!-- Ground strip -->
-    <div id="ground"></div>
 
     <!-- Dragon (focal point) -->
     <div id="dragon-wrap">
