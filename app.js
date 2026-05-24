@@ -45,12 +45,14 @@
   // pushes outside that box, and it eases toward it — never snaps.
   const DRAGON_W = 150;
   const DRAGON_H = 150;
-  // Invisible floor for the dragon's clamp. Sits ~40px above where the
-  // forest's soft fade fully resolves into trees (mask reaches 100% at
-  // ~156px from viewport bottom on a 240px-tall forest band), so the
-  // dragon hovers in the misty treetop region instead of sinking into
+  // Invisible floor for the dragon's clamp. The forest band is 240px
+  // tall with the image now tiled at background-size: 720px auto (see
+  // styles.css for the geometry). At that scale, solid tree foliage
+  // sits ~24px down from the top of the band; GROUND_H=220 keeps the
+  // dragon's belly ~8px above that line — still in the misty mask-fade
+  // region so Ki Ki visually grazes the treetops without sinking into
   // dense foliage. Visual forest height (--forest-h in CSS) is 240px.
-  const GROUND_H = 200;
+  const GROUND_H = 220;
   const SPEED_PX_PER_SEC = 220;        // calm pace
   const DEADZONE_HALF_RATIO = 0.225;   // 45% of viewport (the middle 45% holds the dragon still)
   const CAMERA_CATCHUP_RATE = 4;       // 1/s — exponential ease, calm

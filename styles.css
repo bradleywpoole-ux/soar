@@ -72,9 +72,16 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   height: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px));
   background-image: url('assets/ground.png');
   /* Tiled horizontally so the forest can scroll indefinitely.
-     - `background-size: 100vw auto` makes each tile exactly one
-       viewport-width wide with aspect ratio preserved — same per-tree
-       visual scale as the previous `cover` rule, just now repeatable.
+     - `background-size: 720px auto` fixes the tile width in CSS pixels
+       so the *whole* tree fits inside the 240px band: image aspect is
+       3360:1440 (~2.33:1), so a 720px-wide tile is ~309px tall, of
+       which the band shows the bottom 240px ≈ 77.7%. Trees occupy
+       ~30-80% of the source image, so the top of the band sits just
+       above the tallest crowns — no flat clip line — with ~24px of
+       cream space above the foliage that the alpha mask below
+       fades into the sky. Trees end up ~28% smaller than the old
+       `100vw auto` sizing, which also helps Ki Ki read as flying
+       *above* the forest, not alongside it.
      - `repeat-x` makes the browser draw as many copies as needed to
        cover the band, including offscreen, so a non-zero
        background-position-x never produces an empty edge.
@@ -84,7 +91,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
        the bottom and the cream-sky area of the image gets cropped
        off the top, as before. */
   background-repeat: repeat-x;
-  background-size: 100vw auto;
+  background-size: 720px auto;
   background-position-x: 0;
   background-position-y: 100%;
   z-index: 2;
