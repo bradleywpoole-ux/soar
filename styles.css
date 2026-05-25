@@ -56,7 +56,15 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
    With just `.weather-X` (0,1,0) the ID selector would always win. */
 #scene.weather-sunny  { background: linear-gradient(180deg, #a3c9ff 0%, #ffd1dc 100%); }
 #scene.weather-cloudy { background: linear-gradient(180deg, #c8cbd4 0%, #d6c9e6 100%); }
-#scene.weather-rainy  { background: linear-gradient(180deg, #2d3a6b 0%, #4a3b7a 100%); }
+/* Rainy: soft overcast afternoon, not stormy night. Was a deep
+   night-purple (#2d3a6b -> #4a3b7a) that clashed with the daytime
+   landscape — the sky read as night while the hills and forest
+   stayed lit, producing a hard horizontal split. Now a muted
+   grey-blue at the top fading to pale grey-lavender at the bottom:
+   moodier and greyer than cloudy, but still clearly daytime-bright
+   so it blends smoothly into the bg-far misty hills (lavender-toned
+   already) and the green forest. */
+#scene.weather-rainy  { background: linear-gradient(180deg, #a8b3c5 0%, #c8c2d0 100%); }
 
 /* ---------- Parallax layers (shared base) ----------
    Each scrolling background layer is a sibling div absolutely positioned
