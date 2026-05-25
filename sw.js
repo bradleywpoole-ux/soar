@@ -1,5 +1,5 @@
 // Soar service worker — simple cache-first shell for offline / PWA install.
-const CACHE = 'soar-v14';
+const CACHE = 'soar-v15';
 const SHELL = [
   './',
   'index.html',
@@ -10,7 +10,9 @@ const SHELL = [
   'assets/creature.png',
   'assets/ground.png',
   'assets/bg-far.png',
-  'assets/bg-near.png',
+  // assets/bg-near.png intentionally not pre-cached: the layer was
+  // removed from the active parallax. The PNG remains in the repo for
+  // possible future use; if it comes back into use, add it here.
   'assets/music.mp3',
   'assets/icon-192.png',
   'assets/icon-512.png',

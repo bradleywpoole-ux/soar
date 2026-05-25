@@ -18,7 +18,6 @@
   const scene       = document.getElementById('scene');
   const ground      = document.getElementById('ground');
   const bgFar       = document.getElementById('bg-far');
-  const bgNear      = document.getElementById('bg-near');
   const dragonWrap  = document.getElementById('dragon-wrap');
   const creatureWrap= document.getElementById('creature-wrap');
   const nameDisplay = document.getElementById('dragon-name-display');
@@ -107,13 +106,14 @@
 
   // ---------- Parallax layers ----------
   // Each entry's element scrolls horizontally at -cameraX * speed.
-  // speed < 1 = slower than the world (distant); speed = 1 = forest;
-  // speed > 1 = faster than the world (close). repeat-x in CSS makes
-  // each tile loop seamlessly, so cameraX can grow without bound.
+  // speed < 1 = slower than the world (distant); speed = 1 = forest.
+  // repeat-x in CSS makes each tile loop seamlessly, so cameraX can
+  // grow without bound. (A foreground "bg-near" layer at speed 1.60
+  // used to live here; removed because its hard top edge read as an
+  // artificial band. The PNG is still in assets/ for possible reuse.)
   const PARALLAX_LAYERS = [
-    { el: bgFar,  speed: 0.30 },   // distant mountains/hills, far behind forest
+    { el: bgFar,  speed: 0.30 },   // distant misty hills, far behind forest
     { el: ground, speed: 1.00 },   // forest = the world's reference plane
-    { el: bgNear, speed: 1.60 },   // close grass/leaves, in front of forest
   ];
 
   const applyParallaxScroll = () => {

@@ -82,52 +82,34 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 #bg-far {
   /* Sits ABOVE the forest with a 40px overlap into the forest's
      fade region so the bottom of the distant hills feathers behind
-     the misty treetops — sells the depth and pushes the layer
-     visually further behind the forest. */
+     the misty treetops — sells the depth. */
   bottom: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px) - 40px);
-  height: 130px;
+  /* Tall enough that the distant tree crowns in the image have
+     vertical room to exist inside the long mask fade, instead of
+     hitting the layer's hard top edge. */
+  height: 180px;
   background-image: url('assets/bg-far.png');
-  /* Tile width 1500px keeps the hills modestly sized (~37% of source
-     width on iPad classic). Scaled tile is 1500x421, so the layer's
-     130px height shows ~31% of the image height. */
+  /* Tile width 1500px keeps the hills modestly sized. Scaled tile
+     is 1500x421, so the layer's 180px height shows ~43% of the
+     image height (the middle band — misty mid-distance hills). */
   background-size: 1500px auto;
   background-position-y: 50%;
   z-index: 2;
-  /* Lowered opacity so the layer reads as faint distant haze and
-     stops competing with the forest. Compose with the alpha-fade
-     mask below for a soft top edge. */
+  /* Lowered opacity so the layer reads as faint distant haze. */
   opacity: 0.55;
-  /* Soft top fade so the distant hills don't have a hard edge
-     against the sky on their upper silhouette. */
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 35%, black 100%);
-  mask-image: linear-gradient(180deg, transparent 0%, black 35%, black 100%);
+  /* Long, gentle top fade — transparent from y=0 to y=60% of layer
+     before reaching full opacity. With layer height 180px that's a
+     ~108px transition zone, deep enough that any tree silhouette
+     or hill peak in the image dissolves into the sky over a wide
+     band instead of hitting a sharp horizontal cut-off. */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 60%, black 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, black 60%, black 100%);
 }
 
-/* ---------- Parallax: near foreground (close foliage / grass) ----------
-   Real source art: 4096x1152 with a near-white background above the
-   foliage. The PNG has been pre-processed with a luminance alpha key
-   (see /tmp/key_white.py); pixels whose darkest channel was >= 215
-   are fully transparent, with a smooth ramp down to 180. So the upper
-   ~24% of the image is genuinely alpha-transparent — no white haze
-   leaks over the forest behind. */
-#bg-near {
-  /* Sits at the very bottom of the screen, in front of the forest
-     (z=4 > forest's z=3). Layer height halved from the previous tune
-     — a slim band along the bottom edge that frames the scene
-     rather than dominating it. The forest stays the main world
-     surface visible above this strip. */
-  bottom: 0;
-  height: 60px;
-  background-image: url('assets/bg-near.png');
-  /* Tile width 1200px keeps individual bushes/leaves at a foreground
-     scale that's smaller than the dragon (150px wide). Scaled tile
-     is 1200x337, of which the layer now shows only the bottom 60px
-     ≈ 18% = image positions 82-100% — just the grass and densest
-     low foliage at the very bottom of the source image. */
-  background-size: 1200px auto;
-  background-position-y: 100%;
-  z-index: 4;
-}
+/* (bg-near layer removed — the foreground foliage strip created an
+   artificial hard top edge that read as a band line, not nature. The
+   PNG file is kept in assets/ in case we want to revisit foreground
+   parallax later.) */
 
 /* ---------- Ground (forest landscape) ---------- */
 #ground {
@@ -272,7 +254,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   aspect-ratio: 667 / 374;
   margin-left: -95px;
   margin-top: -53.5px;        /* half of 190 * 374/667 ≈ 106.5 / 2 */
-  z-index: 5;                 /* in front of the parallax layers (bg-far=2, ground=3, bg-near=4), behind the dragon (z=6) */
+  z-index: 5;                 /* in front of the parallax layers (bg-far=2, ground=3), behind the dragon (z=6) */
   pointer-events: none;
   /* Recessed atmosphere — low opacity puts it behind the dragon
      visually, blur softens sub-pixel artifacts in the wispy tail.
