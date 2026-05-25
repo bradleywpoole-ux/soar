@@ -97,13 +97,22 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   z-index: 2;
   /* Lowered opacity so the layer reads as faint distant haze. */
   opacity: 0.55;
-  /* Long, gentle top fade — transparent from y=0 to y=60% of layer
-     before reaching full opacity. With layer height 180px that's a
-     ~108px transition zone, deep enough that any tree silhouette
-     or hill peak in the image dissolves into the sky over a wide
-     band instead of hitting a sharp horizontal cut-off. */
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 60%, black 100%);
-  mask-image: linear-gradient(180deg, transparent 0%, black 60%, black 100%);
+  /* Trapezoidal mask — fades softly on BOTH ends so the layer has
+     no hard horizontal edge anywhere:
+        0%   transparent   (top — sky)
+        60%  opaque        (top fade ends; ~108px of transition into
+                            the sky, so any hill peak / distant tree
+                            crown dissolves over a wide band)
+        80%  opaque        (a 36px solid middle — the visible "real"
+                            distant hills band)
+        100% transparent   (bottom — fades over the last 20% / ~36px
+                            so the layer doesn't end in a flat
+                            horizontal line where it meets the
+                            forest below. Crossfades with the forest's
+                            own top mask to look like atmospheric haze
+                            instead of a layer seam.) */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 60%, black 80%, transparent 100%);
+  mask-image:         linear-gradient(180deg, transparent 0%, black 60%, black 80%, transparent 100%);
 }
 
 /* (bg-near layer removed — the foreground foliage strip created an
