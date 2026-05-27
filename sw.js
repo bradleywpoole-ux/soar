@@ -1,5 +1,5 @@
 // Soar service worker — simple cache-first shell for offline / PWA install.
-const CACHE = 'soar-v17';
+const CACHE = 'soar-v18';
 const SHELL = [
   './',
   'index.html',

@@ -27,12 +27,22 @@
     </div>
     <div id="rain" class="weather-layer"></div>
 
-    <!-- Parallax: far background. Slow-scrolling distant hills that
-         sit BEHIND the forest. Speed 0.3x relative to the camera. -->
-    <div id="bg-far" class="parallax-layer"></div>
+    <!-- Parallax: far background. Slow-scrolling distant hills behind
+         the forest. Speed 0.3x. The wrapper carries positioning + the
+         soft top/bottom mask; the two children (A/B) are the actual
+         scrolling background layers, which crossfade between regions
+         driven by app.js's updateRegions(). -->
+    <div id="bg-far">
+      <div id="bg-far-a" class="parallax-layer"></div>
+      <div id="bg-far-b" class="parallax-layer"></div>
+    </div>
 
-    <!-- Ground strip (forest) — speed 1.0x, the world's reference plane. -->
-    <div id="ground" class="parallax-layer"></div>
+    <!-- Ground (forest) — speed 1.0x, the world's reference plane.
+         Same A/B crossfade structure as bg-far. -->
+    <div id="ground">
+      <div id="ground-a" class="parallax-layer"></div>
+      <div id="ground-b" class="parallax-layer"></div>
+    </div>
 
     <!-- Companion phoenix — follows the dragon with a gentle lag.
          Wrap holds the JS-driven position transform; the inner img
@@ -48,6 +58,11 @@
 
     <!-- Dragon name display (top-left) -->
     <div id="dragon-name-display" hidden></div>
+
+    <!-- Temporary debug readout (top-center). Shows current region
+         and worldX so we can confirm transitions fire at the right
+         distance. Remove once region system is verified. -->
+    <div id="debug-readout"></div>
 
     <!-- Mute toggle (top-right) -->
     <button id="mute-btn" class="corner-btn" aria-label="Toggle music">

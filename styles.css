@@ -66,61 +66,60 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
    already) and the green forest. */
 #scene.weather-rainy  { background: linear-gradient(180deg, #a8b3c5 0%, #c8c2d0 100%); }
 
-/* ---------- Parallax layers (shared base) ----------
-   Each scrolling background layer is a sibling div absolutely positioned
-   inside #scene. JS drives `background-position-x` to -cameraX * speed
-   each frame (see PARALLAX_LAYERS in app.js). repeat-x makes the tile
-   loop seamlessly in both directions. pointer-events: none so the layers
-   never swallow taps meant for buttons sitting above them. */
+/* ---------- Parallax layers (A/B crossfade base) ----------
+   Each "parallax slot" is a wrapper (#bg-far / #ground) carrying
+   positioning + mask, containing TWO .parallax-layer children (A and
+   B). JS scrolls both at the same speed (background-position-x =
+   -cameraX * speed) so they stay locked; only their opacities differ.
+   Each child's opacity = base * region-blend, where base is set per
+   slot (in #bg-far / #ground rules below) and region-blend is set
+   from JS as the dragon crosses region boundaries. When fromIdx ==
+   toIdx (no transition), A's blend = 1 and B's blend = 0, so only
+   the "from" layer renders — equivalent to the old single-layer
+   behavior. */
 .parallax-layer {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset: 0;
   background-repeat: repeat-x;
   background-position-x: 0;
   pointer-events: none;
+  /* Defaults so a layer with no CSS variables set still renders. */
+  --base-opacity: 1;
+  --region-blend: 1;
+  opacity: calc(var(--base-opacity) * var(--region-blend));
 }
 
 /* ---------- Parallax: far background (distant misty hills) ----------
-   Real source art: 4096x1152 (aspect ~3.56:1). The image is a vertical
-   stack of layered hills with pink-cloud sky bands between them; we
-   show only the middle horizontal band via `background-position-y: 50%`
-   so the rendered slice reads as the misty mid-distance, not the top
-   sky or the foreground-ish lower silhouettes. */
+   Wrapper carries positioning, z-index, and the trapezoidal mask.
+   The two A/B children inside hold the actual scrolling background
+   images and crossfade between regions via --region-blend.
+   Source art is 4096x1152; per-child `background-size: 1500px auto`
+   shows the misty mid-distance band via `background-position-y: 50%`. */
 #bg-far {
+  position: absolute;
+  left: 0;
+  right: 0;
   /* Sits ABOVE the forest with a 40px overlap into the forest's
      fade region so the bottom of the distant hills feathers behind
-     the misty treetops — sells the depth. */
+     the misty treetops. */
   bottom: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px) - 40px);
   /* Tall enough that the distant tree crowns in the image have
-     vertical room to exist inside the long mask fade, instead of
-     hitting the layer's hard top edge. */
+     vertical room to exist inside the long mask fade. */
   height: 180px;
-  background-image: url('assets/bg-far.png');
-  /* Tile width 1500px keeps the hills modestly sized. Scaled tile
-     is 1500x421, so the layer's 180px height shows ~43% of the
-     image height (the middle band — misty mid-distance hills). */
-  background-size: 1500px auto;
-  background-position-y: 50%;
   z-index: 2;
-  /* Lowered opacity so the layer reads as faint distant haze. */
-  opacity: 0.55;
+  pointer-events: none;
   /* Trapezoidal mask — fades softly on BOTH ends so the layer has
-     no hard horizontal edge anywhere:
-        0%   transparent   (top — sky)
-        60%  opaque        (top fade ends; ~108px of transition into
-                            the sky, so any hill peak / distant tree
-                            crown dissolves over a wide band)
-        80%  opaque        (a 36px solid middle — the visible "real"
-                            distant hills band)
-        100% transparent   (bottom — fades over the last 20% / ~36px
-                            so the layer doesn't end in a flat
-                            horizontal line where it meets the
-                            forest below. Crossfades with the forest's
-                            own top mask to look like atmospheric haze
-                            instead of a layer seam.) */
+     no hard horizontal edge anywhere. Mask is on the wrapper so it
+     clips A and B together as one composite. */
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 60%, black 80%, transparent 100%);
   mask-image:         linear-gradient(180deg, transparent 0%, black 60%, black 80%, transparent 100%);
+}
+#bg-far .parallax-layer {
+  background-size: 1500px auto;
+  background-position-y: 50%;
+  /* Distant haze — base opacity below 1. Composed with --region-blend
+     by the shared .parallax-layer rule. */
+  --base-opacity: 0.55;
 }
 
 /* (bg-near layer removed — the foreground foliage strip created an
@@ -128,49 +127,29 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
    PNG file is kept in assets/ in case we want to revisit foreground
    parallax later.) */
 
-/* ---------- Ground (forest landscape) ---------- */
+/* ---------- Ground (forest landscape) ----------
+   Wrapper carries positioning, height, z-index, and the soft top mask.
+   A/B children hold the actual scrolling image and crossfade between
+   regions via --region-blend.
+   `background-size: 720px auto` keeps the per-tree visual scale
+   consistent (see big comment in the previous version's history for
+   why 720px). Mask top 30% fades the leafy treetops into the sky. */
 #ground {
-  /* `.parallax-layer` provides position/left/right/repeat/pointer-events.
-     This rule keeps only the forest-specific geometry, image, and mask. */
+  position: absolute;
+  left: 0;
+  right: 0;
   bottom: 0;
-  /* Use the *forest* height for the visible band so the trees read as
-     a landscape, not a sliver. Extend below the safe-area inset so
-     the texture reaches the actual screen edge on iPads with a home
-     indicator. The dragon's invisible floor (in app.js) stays just
-     above the dense foliage — see GROUND_H there. */
   height: calc(var(--forest-h) + env(safe-area-inset-bottom, 0px));
-  background-image: url('assets/ground.png');
-  /* Tiled horizontally so the forest can scroll indefinitely.
-     - `background-size: 720px auto` fixes the tile width in CSS pixels
-       so the *whole* tree fits inside the 240px band: image aspect is
-       3360:1440 (~2.33:1), so a 720px-wide tile is ~309px tall, of
-       which the band shows the bottom 240px ≈ 77.7%. Trees occupy
-       ~30-80% of the source image, so the top of the band sits just
-       above the tallest crowns — no flat clip line — with ~24px of
-       cream space above the foliage that the alpha mask below
-       fades into the sky. Trees end up ~28% smaller than the old
-       `100vw auto` sizing, which also helps Ki Ki read as flying
-       *above* the forest, not alongside it.
-     - `repeat-x` makes the browser draw as many copies as needed to
-       cover the band, including offscreen, so a non-zero
-       background-position-x never produces an empty edge.
-     - background-position-x is driven each frame by JS (set to
-       -cameraX) so the forest scrolls past as the camera moves.
-       Y stays pinned to the bottom of the band so grass stays at
-       the bottom and the cream-sky area of the image gets cropped
-       off the top, as before. */
+  z-index: 3;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 30%, black 100%);
+  mask-image:         linear-gradient(180deg, transparent 0%, black 30%, black 100%);
+}
+#ground .parallax-layer {
   background-size: 720px auto;
   background-position-y: 100%;
-  z-index: 3;
-  /* Even after cropping the cream top off the image, the upper foliage
-     still has cream gaps between leaves. A soft alpha mask fades those
-     into the sky so the forest top blends instead of showing as a
-     hard horizon line. The bottom 70% stays fully opaque (solid trees
-     + grass). */
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 30%, black 100%);
-  mask-image: linear-gradient(180deg, transparent 0%, black 30%, black 100%);
-  /* No box-shadow — the soft fade itself does the sky-to-forest blend;
-     a shadow at the top edge would draw the hard line we're hiding. */
+  /* Ground is fully opaque at its base; --base-opacity defaults to 1
+     from the shared .parallax-layer rule. Only --region-blend varies. */
 }
 
 /* ---------- Weather layers ---------- */
@@ -540,3 +519,25 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 }
 #name-submit:active { transform: scale(0.96); }
 #name-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- Temporary region debug readout ----------
+   Shown to confirm region transitions fire at the expected worldX.
+   Remove this rule (and the corresponding element in index.html +
+   the assignment in app.js) once the region system is verified. */
+#debug-readout {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  padding: 5px 12px;
+  background: rgba(40, 24, 60, 0.55);
+  color: rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}

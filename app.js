@@ -16,8 +16,14 @@
 
   // ---------- DOM ----------
   const scene       = document.getElementById('scene');
-  const ground      = document.getElementById('ground');
-  const bgFar       = document.getElementById('bg-far');
+  // Parallax layers: each slot (bg-far, ground) is now an A/B pair
+  // for region crossfade. A and B scroll at the same speed; only
+  // their opacities differ during a region transition.
+  const bgFarA      = document.getElementById('bg-far-a');
+  const bgFarB      = document.getElementById('bg-far-b');
+  const groundA     = document.getElementById('ground-a');
+  const groundB     = document.getElementById('ground-b');
+  const debugReadout= document.getElementById('debug-readout');
   const dragonWrap  = document.getElementById('dragon-wrap');
   const creatureWrap= document.getElementById('creature-wrap');
   const nameDisplay = document.getElementById('dragon-name-display');
@@ -106,14 +112,16 @@
 
   // ---------- Parallax layers ----------
   // Each entry's element scrolls horizontally at -cameraX * speed.
-  // speed < 1 = slower than the world (distant); speed = 1 = forest.
+  // Each parallax slot (bg-far, ground) has TWO entries — A and B —
+  // that scroll at the same speed but crossfade between regions
+  // via updateRegions(). A is the "from" layer, B is the "to" layer.
   // repeat-x in CSS makes each tile loop seamlessly, so cameraX can
-  // grow without bound. (A foreground "bg-near" layer at speed 1.60
-  // used to live here; removed because its hard top edge read as an
-  // artificial band. The PNG is still in assets/ for possible reuse.)
+  // grow without bound.
   const PARALLAX_LAYERS = [
-    { el: bgFar,  speed: 0.30 },   // distant misty hills, far behind forest
-    { el: ground, speed: 1.00 },   // forest = the world's reference plane
+    { el: bgFarA,  speed: 0.30 },
+    { el: bgFarB,  speed: 0.30 },
+    { el: groundA, speed: 1.00 },
+    { el: groundB, speed: 1.00 },
   ];
 
   const applyParallaxScroll = () => {
@@ -122,8 +130,91 @@
     }
   };
 
+  // ---------- Region engine ----------
+  // The world is partitioned along worldX into named regions; each
+  // region supplies its own background art per parallax slot. Region
+  // detection is a PURE function of worldX (no clock, no frame count)
+  // so that:
+  //   - Flying left correctly returns to earlier regions.
+  //   - Reloading mid-transition resumes at the right blend factor.
+  //   - Past the last region's end (or before the first's start),
+  //     that boundary region's art tiles forever — "linear with
+  //     clamps", calm endless feel.
+  //
+  // Each adjacent-region boundary has a TRANSITION_BAND-wide crossfade
+  // zone *centered* on the boundary worldX. Inside the band, both
+  // sides' art is visible at complementary opacities; outside the
+  // band, only the containing region's art renders.
+  //
+  // For now, region 1 reuses the forest art — verifies the crossfade
+  // mechanism without needing new images. Swap in real art by editing
+  // the REGIONS table.
+  const REGIONS = [
+    { id: 'forest',      range: [0,     5000],  bgFar: 'assets/bg-far.png', ground: 'assets/ground.png' },
+    { id: 'also-forest', range: [5000,  10000], bgFar: 'assets/bg-far.png', ground: 'assets/ground.png' },
+  ];
+  const TRANSITION_BAND = 600; // worldX-units wide, centered on each boundary
+
+  const regionBlendAt = (worldX) => {
+    // Inside a transition band? Returns the two adjacent regions and
+    // the linear blend factor t ∈ [0,1] across the band.
+    for (let i = 0; i < REGIONS.length - 1; i++) {
+      const boundary = REGIONS[i].range[1];           // = REGIONS[i+1].range[0]
+      const halfBand = TRANSITION_BAND / 2;
+      if (worldX >= boundary - halfBand && worldX < boundary + halfBand) {
+        const t = (worldX - (boundary - halfBand)) / TRANSITION_BAND;
+        return { fromIdx: i, toIdx: i + 1, t };
+      }
+    }
+    // Not in a band — find containing region, clamping at both ends.
+    let idx;
+    if (worldX < REGIONS[0].range[0]) {
+      idx = 0;
+    } else if (worldX >= REGIONS[REGIONS.length - 1].range[1]) {
+      idx = REGIONS.length - 1;
+    } else {
+      idx = 0;
+      for (let i = 0; i < REGIONS.length; i++) {
+        if (worldX < REGIONS[i].range[1]) { idx = i; break; }
+      }
+    }
+    return { fromIdx: idx, toIdx: idx, t: 0 };
+  };
+
+  // Swap a layer's background-image to a region's art *only if* the
+  // region actually changed — avoids the browser re-decoding the same
+  // PNG on every frame. Tracks current region via dataset.
+  const setLayerRegion = (el, regionIdx, assetKey) => {
+    const key = String(regionIdx);
+    if (el.dataset.regionIdx === key) return;
+    el.dataset.regionIdx = key;
+    el.style.backgroundImage = `url('${REGIONS[regionIdx][assetKey]}')`;
+  };
+
+  const updateRegions = () => {
+    const { fromIdx, toIdx, t } = regionBlendAt(pos.x);
+    // A holds "from" (visible going in), B holds "to" (fades in).
+    setLayerRegion(bgFarA,  fromIdx, 'bgFar');
+    setLayerRegion(bgFarB,  toIdx,   'bgFar');
+    setLayerRegion(groundA, fromIdx, 'ground');
+    setLayerRegion(groundB, toIdx,   'ground');
+    // Opacity: A = base * (1 - t), B = base * t. When fromIdx == toIdx
+    // (no transition), A is fully visible and B is fully invisible.
+    bgFarA.style.setProperty('--region-blend', 1 - t);
+    bgFarB.style.setProperty('--region-blend', t);
+    groundA.style.setProperty('--region-blend', 1 - t);
+    groundB.style.setProperty('--region-blend', t);
+    // Debug readout (temporary).
+    const fromName = REGIONS[fromIdx].id;
+    const toName   = REGIONS[toIdx].id;
+    debugReadout.textContent = (fromIdx === toIdx)
+      ? `region: ${fromName}  |  worldX: ${pos.x.toFixed(0)}`
+      : `${fromName} → ${toName}  |  worldX: ${pos.x.toFixed(0)}  |  t: ${t.toFixed(2)}`;
+  };
+
   applyDragonTransform();
   applyParallaxScroll();
+  updateRegions();   // initial paint matches saved worldX (handles mid-transition reload correctly)
 
   // Held-direction state — buttons set/unset flags; an rAF loop moves the dragon.
   const held = { up: false, down: false, left: false, right: false };
@@ -211,6 +302,7 @@
     // (Cheap when no values changed; transforms are GPU-composited.)
     applyDragonTransform();
     applyParallaxScroll();
+    updateRegions();
 
     // When the dragon flips, schedule the phoenix to flip a moment later.
     // Cancel any pending flip if the dragon turns again before it fires.
@@ -266,6 +358,7 @@
     pos.y = clampY(pos.y);
     applyDragonTransform();
     applyParallaxScroll();
+    updateRegions();
     applyPhoenixTransform();
   });
 
